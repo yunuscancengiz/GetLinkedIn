@@ -19,7 +19,7 @@ class GetLinkedIn:
 
         self.rotate_proxy = RotateProxy(used_proxy=None)
         self.proxy, self.seleniumwire_options, self.proxies_dict = self.rotate_proxy.change_proxy()
-        self.browser = webdriver.Firefox(seleniumwire_options=self.seleniumwire_options)
+        #self.browser = webdriver.Firefox(seleniumwire_options=self.seleniumwire_options)
 
         self.main()
 
@@ -29,18 +29,19 @@ class GetLinkedIn:
             self.read_names()
             counter = 1
             for name, search_url in zip(self.name_list, self.url_list):
-                if counter % 10 == 0:
-                    self.browser.quit()
+                if counter % 5 == 0:
+                    #self.browser.quit()
                     self.rotate_proxy = RotateProxy(used_proxy=self.proxy)
                     self.proxy, self.seleniumwire_options, self.proxies_dict = self.rotate_proxy.change_proxy()
-                    self.browser = webdriver.Firefox(seleniumwire_options=self.seleniumwire_options)
+                    #self.browser = webdriver.Firefox(seleniumwire_options=self.seleniumwire_options)
 
                 print(counter)
-                self.scrape_profile_url_selenium(name=name, search_url=search_url)
-                time.sleep(5)
+                self.scrape_profile_url(name=name, search_url=search_url)
+                time.sleep(2)
                 counter += 1
         except Exception as e:
             print(e)
+            self.convert_to_excel()
         finally:
             self.convert_to_excel()
     
@@ -50,18 +51,18 @@ class GetLinkedIn:
             for line in f:
                 self.name_list.append(line.strip('\n'))
                 url_name = (line.strip('\n')).lower().replace(' ', '+')
-                self.url_list.append(f'https://www.google.com/search?q={url_name}+%2B+yönetim+kurulu+inurl%3Alinkedin.com%2Fin%2F')
+                self.url_list.append(f'http://www.google.com/search?q={url_name}+%2B+yönetim+kurulu+inurl%3Alinkedin.com%2Fin%2F')
 
 
     def scrape_profile_url(self, name:str, search_url:str):
-        r = requests.get(search_url, headers=self.headers, proxies=self.proxies_dict)
+        r = requests.get(search_url, proxies=self.proxies_dict)
         soup = BeautifulSoup(r.content, 'lxml')
 
         try:
             profile_url = '-'
-            span_tag = soup.find('span', attrs={'jsaction':'rcuQ6b:npT2md;PYDNKe:bLV6Bd;mLt3mc'})
-            title = span_tag.find('a').find('h3').getText()
-            profile_url = span_tag.find('a').get('href')
+            div_tag = soup.find('div', attrs={'class':'egMi0 kCrYT'})
+            title = div_tag.find('div', attrs={'class':'BNeawe vvjwJb AP7Wnd'}).getText()
+            profile_url = str(div_tag.find('a').get('href')).lstrip('/url?q=').split('&')[0]
             fixed_title = self._tur_chars_to_eng_chars(text=title)
 
             if name in fixed_title:
